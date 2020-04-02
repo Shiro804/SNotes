@@ -57,7 +57,7 @@ public class EditActivity extends AppCompatActivity {
                 SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.shiro.snotesextended", Context.MODE_PRIVATE);
                 HashSet<String> set;
 
-                if(s.toString().trim().length() == 0){
+                if(s.toString().trim().length() == 0){ 
                     MainActivity.notes.remove(noteId);
                     MainActivity.arrayAdapter.notifyDataSetChanged();
                     set = new HashSet<>(MainActivity.notes);
