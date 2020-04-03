@@ -18,6 +18,11 @@ public class EditActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        SharedPreferences sharedThemePreferences = setSharedPreferences();
+
+        setTheme(sharedThemePreferences);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit);
 
@@ -26,13 +31,32 @@ public class EditActivity extends AppCompatActivity {
         noteId = intent.getIntExtra("noteId", -1);
 
         if(noteId != -1) {
-            editText.setText(com.shiro.snotesextended.MainActivity.notes.get(noteId));
+            editText.setText(MainActivity.notes.get(noteId));
         } else {
             MainActivity.notes.add("");
             noteId = MainActivity.notes.size() - 1;
             MainActivity.arrayAdapter.notifyDataSetChanged();
         }
 
+        editTextTextChangedListener(editText);
+
+    }
+
+    private SharedPreferences setSharedPreferences() {
+        return getApplicationContext().getSharedPreferences("com.shiro.snotesextended", MODE_PRIVATE);
+    }
+
+    private void setTheme(SharedPreferences sharedThemePreferences) {
+        if (sharedThemePreferences.getBoolean("isDarkMode", false)) {
+            setTheme(R.style.AppThemeDark);
+            sharedThemePreferences.edit().putBoolean("isDarkMode", true).apply();
+        } else {
+            setTheme(R.style.AppTheme);
+            sharedThemePreferences.edit().putBoolean("isDarkMode", false).apply();
+        }
+    }
+
+    private void editTextTextChangedListener(EditText editText) {
         editText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -57,7 +81,7 @@ public class EditActivity extends AppCompatActivity {
                 SharedPreferences sharedPreferences = getApplicationContext().getSharedPreferences("com.shiro.snotesextended", Context.MODE_PRIVATE);
                 HashSet<String> set;
 
-                if(s.toString().trim().length() == 0){ 
+                if (s.toString().trim().length() == 0) {
                     MainActivity.notes.remove(noteId);
                     MainActivity.arrayAdapter.notifyDataSetChanged();
                     set = new HashSet<>(MainActivity.notes);
@@ -65,6 +89,5 @@ public class EditActivity extends AppCompatActivity {
                 }
             }
         });
-
     }
 }
