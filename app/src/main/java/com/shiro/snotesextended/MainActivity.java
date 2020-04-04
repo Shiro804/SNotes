@@ -5,11 +5,15 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.view.ContextThemeWrapper;
 import android.view.DragEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -17,6 +21,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
@@ -29,7 +34,10 @@ public class MainActivity extends AppCompatActivity {
 
     static ArrayList<String> notes = new ArrayList<>();
     static ArrayAdapter arrayAdapter;
-    //public static boolean isCurrentModeDark;
+
+    Dialog customAlertDialog;
+    Button alertYesButton;
+    Button alertNoButton;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -68,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
+        customAlertDialog = new Dialog(this);
+
         ListView listView = findViewById(R.id.listView);
 
         FloatingActionButton addNotesButton = findViewById(R.id.addNotesButton);
@@ -80,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
 
         notes = new ArrayList<>(set);
 
-        notesLengthEqualsZeroCheck(sharedPreferences);
+        checkIfNotesHasEmptyNotesAndRemoveThem();
 
         arrayAdapter = new ArrayAdapter(this, android.R.layout.simple_expandable_list_item_1, notes);
 
@@ -104,6 +114,12 @@ public class MainActivity extends AppCompatActivity {
         return getApplicationContext().getSharedPreferences("com.shiro.snotesextended", MODE_PRIVATE);
     }
 
+    private void restartApp() {
+        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
     private void setTheme(SharedPreferences sharedThemePreferences) {
         if (sharedThemePreferences.getBoolean("isDarkMode", false)) {
             setTheme(R.style.AppThemeDark);
@@ -114,33 +130,73 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void restartApp() {
-        Intent intent = new Intent(getApplicationContext(), MainActivity.class);
-        startActivity(intent);
-        finish();
-    }
-
     private void listViewItemOnLongClickListener(ListView listView) {
         listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
 
-                new AlertDialog.Builder(MainActivity.this).setIcon(android.R.drawable.ic_dialog_alert).setTitle("Are you sure?").setMessage("Do you want to delete this note?").setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        notes.remove(position);
-                        arrayAdapter.notifyDataSetChanged();
+                SharedPreferences sharedPreferences = setSharedPreferences();
 
-                        SharedPreferences sharedPreferences = setSharedPreferences();
-                        HashSet<String> set = new HashSet<>(notes);
-                        sharedPreferences.edit().putStringSet("notes", set).apply();
-                    }
-                })
-                        .setNegativeButton("No", null).show();
-
+                if (sharedPreferences.getBoolean("isDarkMode", false)) {
+                    showDarkDialog(position, sharedPreferences);
+                } else {
+                    showLightDialog(position, sharedPreferences);
+                }
                 return true;
             }
         });
+    }
+
+    private void showLightDialog(final int position, final SharedPreferences sharedPreferences) {
+        customAlertDialog.setContentView(R.layout.custom_dialog_light);
+        alertYesButton = customAlertDialog.findViewById(R.id.alertYesButton);
+        alertNoButton = customAlertDialog.findViewById(R.id.alertNoButton);
+
+        alertYesButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                notes.remove(position);
+                arrayAdapter.notifyDataSetChanged();
+                HashSet<String> set = new HashSet<>(notes);
+                sharedPreferences.edit().putStringSet("notes", set).apply();
+                customAlertDialog.dismiss();
+            }
+        });
+
+        alertNoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                customAlertDialog.dismiss();
+            }
+        });
+        customAlertDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        customAlertDialog.show();
+    }
+
+    private void showDarkDialog(final int position, final SharedPreferences sharedPreferences) {
+        customAlertDialog.setContentView(R.layout.custom_dialog_dark);
+        alertYesButton = customAlertDialog.findViewById(R.id.alertYesButton);
+        alertNoButton = customAlertDialog.findViewById(R.id.alertNoButton);
+
+        alertYesButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                notes.remove(position);
+                arrayAdapter.notifyDataSetChanged();
+                HashSet<String> set = new HashSet<>(notes);
+                sharedPreferences.edit().putStringSet("notes", set).apply();
+                customAlertDialog.dismiss();
+            }
+        });
+
+        alertNoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                customAlertDialog.dismiss();
+            }
+        });
+        customAlertDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        customAlertDialog.show();
     }
 
     private void listViewItemOnClickListener(ListView listView) {
@@ -154,15 +210,15 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void notesLengthEqualsZeroCheck(SharedPreferences sharedPreferences) {
-        HashSet<String> set;
-        if (notes.size() == 0) {
-            notes.add("Welcome!");
-            set = new HashSet<>(notes);
-            sharedPreferences.edit().putStringSet("notes", set).apply();
-        }
-    }
-
+    /**
+     * This metehod checks if the HashSet saved as SharedPreferences is null or not to avoid app crashing.
+     * This method will be usefull when the user has deleted the app data or the user is starting the app
+     * for the first time, so the HashSet will be null.
+     *
+     * @param sharedPreferences
+     * @param set
+     * @return set which is not null to avoid crashing
+     */
     private HashSet<String> setAndNotesNullCheck(SharedPreferences sharedPreferences, HashSet<String> set) {
         if (set == null) {
             if (notes != null) {
@@ -176,4 +232,16 @@ public class MainActivity extends AppCompatActivity {
         }
         return set;
     }
+
+    /**
+     * This method checks if the notes ArrayList contains any empty notes and removes them
+     */
+    private void checkIfNotesHasEmptyNotesAndRemoveThem() {
+        for (int i = 0; i < notes.size(); i++) {
+            if (notes.get(i).trim().length() == 0) {
+                notes.remove(i);
+            }
+        }
+    }
+
 }

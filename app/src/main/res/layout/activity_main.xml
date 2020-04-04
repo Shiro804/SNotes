@@ -28,14 +28,13 @@
         android:layout_alignParentBottom="true"
         android:layout_marginEnd="12dp"
         android:layout_marginBottom="12dp"
-        android:background="@color/black"
         android:clickable="true"
         android:focusable="true"
         android:hapticFeedbackEnabled="true"
         android:longClickable="true"
         android:tint="#00FFE5"
         app:backgroundTint="@color/black"
-        app:backgroundTintMode="multiply"
+        app:backgroundTintMode="add"
         app:srcCompat="@android:drawable/ic_menu_edit" />
 
 </RelativeLayout>
